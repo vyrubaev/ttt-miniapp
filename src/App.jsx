@@ -13,7 +13,6 @@ const winningLines = [
 
 function App() {
   const [board, setBoard] = useState(Array(9).fill(null));
-  const [xTurn, setXTurn] = useState(true);
   const [winner, setWinner] = useState(null);
 
   useEffect(() => {
@@ -29,37 +28,102 @@ function App() {
     checkWinner();
   }, [board]);
 
+  // Проверка победителя
   const checkWinner = () => {
     for (let line of winningLines) {
-      const [a, b, c] = line;
-      if (
-        board[a] &&
-        board[a] === board[b] &&
-        board[a] === board[c]
-      ) {
+      const [a,b,c] = line;
+      if (board[a] && board[a] === board[b] && board[a] === board[c]) {
         setWinner(board[a]);
         return;
       }
     }
-
-    if (!board.includes(null)) {
-      setWinner("draw");
-    }
+    if (!board.includes(null)) setWinner("draw");
   };
 
+  // Ход игрока
   const handleClick = (index) => {
     if (board[index] || winner) return;
 
     const newBoard = [...board];
-    newBoard[index] = xTurn ? "X" : "O";
+    newBoard[index] = "X"; // Игрок всегда X
     setBoard(newBoard);
-    setXTurn(!xTurn);
+
+    // Ход компьютера через 300мс
+    setTimeout(() => computerMove(newBoard), 300);
+  };
+
+  // Минимакс алгоритм
+  const minimax = (newBoard, isMax) => {
+    const availSpots = newBoard.map((v, i) => v === null ? i : null).filter(v => v !== null);
+
+    // Проверяем, есть ли победитель
+    const winnerCheck = getWinner(newBoard);
+    if (winnerCheck === "O") return { score: 1 };
+    if (winnerCheck === "X") return { score: -1 };
+    if (availSpots.length === 0) return { score: 0 };
+
+    const moves = [];
+
+    for (let i = 0; i < availSpots.length; i++) {
+      const move = {};
+      move.index = availSpots[i];
+      newBoard[availSpots[i]] = isMax ? "O" : "X";
+
+      const result = minimax(newBoard, !isMax);
+      move.score = result.score;
+
+      newBoard[availSpots[i]] = null;
+      moves.push(move);
+    }
+
+    let bestMove;
+    if (isMax) {
+      let bestScore = -Infinity;
+      for (let i = 0; i < moves.length; i++) {
+        if (moves[i].score > bestScore) {
+          bestScore = moves[i].score;
+          bestMove = moves[i];
+        }
+      }
+    } else {
+      let bestScore = Infinity;
+      for (let i = 0; i < moves.length; i++) {
+        if (moves[i].score < bestScore) {
+          bestScore = moves[i].score;
+          bestMove = moves[i];
+        }
+      }
+    }
+
+    return bestMove;
+  };
+
+  // Функция для проверки победителя на произвольной доске
+  const getWinner = (boardCheck) => {
+    for (let line of winningLines) {
+      const [a,b,c] = line;
+      if (boardCheck[a] && boardCheck[a] === boardCheck[b] && boardCheck[a] === boardCheck[c]) {
+        return boardCheck[a];
+      }
+    }
+    return null;
+  };
+
+  // Ход компьютера
+  const computerMove = (currentBoard) => {
+    if (winner) return;
+
+    const best = minimax(currentBoard, true);
+    if (best) {
+      const newBoard = [...currentBoard];
+      newBoard[best.index] = "O";
+      setBoard(newBoard);
+    }
   };
 
   const resetGame = () => {
     setBoard(Array(9).fill(null));
     setWinner(null);
-    setXTurn(true);
   };
 
   return (
@@ -67,16 +131,10 @@ function App() {
       <h1>Крестики-нолики</h1>
 
       {winner && (
-        <h2>
-          {winner === "draw"
-            ? "Ничья!"
-            : `Победил ${winner}`}
-        </h2>
+        <h2>{winner === "draw" ? "Ничья!" : `Победил ${winner}`}</h2>
       )}
 
-      {!winner && (
-        <h2>Ход: {xTurn ? "X" : "O"}</h2>
-      )}
+      {!winner && <h2>Ход игрока (X)</h2>}
 
       <div
         style={{
