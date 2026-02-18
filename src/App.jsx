@@ -14,6 +14,7 @@ const winningLines = [
 function App() {
   const [board, setBoard] = useState(Array(9).fill(null));
   const [winner, setWinner] = useState(null);
+  const [statusText, setStatusText] = useState("Ход игрока (X)");
 
   useEffect(() => {
     if (window.Telegram?.WebApp) {
@@ -28,113 +29,93 @@ function App() {
     checkWinner();
   }, [board]);
 
-  // Проверка победителя
   const checkWinner = () => {
     for (let line of winningLines) {
       const [a,b,c] = line;
       if (board[a] && board[a] === board[b] && board[a] === board[c]) {
         setWinner(board[a]);
+        setStatusText(`Победил ${board[a]}`);
         return;
       }
     }
-    if (!board.includes(null)) setWinner("draw");
+    if (!board.includes(null)) {
+      setWinner("draw");
+      setStatusText("Ничья!");
+      return;
+    }
+    setStatusText("Ход игрока (X)");
   };
 
-  // Ход игрока
   const handleClick = (index) => {
     if (board[index] || winner) return;
 
     const newBoard = [...board];
-    newBoard[index] = "X"; // Игрок всегда X
+    newBoard[index] = "X";
     setBoard(newBoard);
 
-    // Ход компьютера через 300мс
+    // Обновляем статус до хода компьютера
+    setStatusText("Ход компьютера (O)");
+
     setTimeout(() => computerMove(newBoard), 300);
   };
 
-  // Минимакс алгоритм
   const minimax = (newBoard, isMax) => {
-    const availSpots = newBoard.map((v, i) => v === null ? i : null).filter(v => v !== null);
-
-    // Проверяем, есть ли победитель
+    const availSpots = newBoard.map((v,i)=>v===null?i:null).filter(v=>v!==null);
     const winnerCheck = getWinner(newBoard);
-    if (winnerCheck === "O") return { score: 1 };
-    if (winnerCheck === "X") return { score: -1 };
-    if (availSpots.length === 0) return { score: 0 };
+    if (winnerCheck === "O") return {score:1};
+    if (winnerCheck === "X") return {score:-1};
+    if (availSpots.length === 0) return {score:0};
 
     const moves = [];
-
-    for (let i = 0; i < availSpots.length; i++) {
-      const move = {};
-      move.index = availSpots[i];
-      newBoard[availSpots[i]] = isMax ? "O" : "X";
-
-      const result = minimax(newBoard, !isMax);
-      move.score = result.score;
-
-      newBoard[availSpots[i]] = null;
+    for (let i of availSpots){
+      const move = {index:i};
+      newBoard[i] = isMax?"O":"X";
+      move.score = minimax(newBoard,!isMax).score;
+      newBoard[i] = null;
       moves.push(move);
     }
 
     let bestMove;
-    if (isMax) {
-      let bestScore = -Infinity;
-      for (let i = 0; i < moves.length; i++) {
-        if (moves[i].score > bestScore) {
-          bestScore = moves[i].score;
-          bestMove = moves[i];
-        }
-      }
+    if (isMax){
+      let bestScore=-Infinity;
+      for(let m of moves) if(m.score>bestScore){bestScore=m.score; bestMove=m;}
     } else {
-      let bestScore = Infinity;
-      for (let i = 0; i < moves.length; i++) {
-        if (moves[i].score < bestScore) {
-          bestScore = moves[i].score;
-          bestMove = moves[i];
-        }
-      }
+      let bestScore=Infinity;
+      for(let m of moves) if(m.score<bestScore){bestScore=m.score; bestMove=m;}
     }
-
     return bestMove;
   };
 
-  // Функция для проверки победителя на произвольной доске
-  const getWinner = (boardCheck) => {
-    for (let line of winningLines) {
-      const [a,b,c] = line;
-      if (boardCheck[a] && boardCheck[a] === boardCheck[b] && boardCheck[a] === boardCheck[c]) {
-        return boardCheck[a];
-      }
+  const getWinner = (b) => {
+    for (let line of winningLines){
+      const [a,b1,c] = line;
+      if (b[a] && b[a]===b[b1] && b[a]===b[c]) return b[a];
     }
     return null;
   };
 
-  // Ход компьютера
   const computerMove = (currentBoard) => {
     if (winner) return;
 
-    const best = minimax(currentBoard, true);
-    if (best) {
+    const best = minimax(currentBoard,true);
+    if (best){
       const newBoard = [...currentBoard];
       newBoard[best.index] = "O";
       setBoard(newBoard);
+      setStatusText("Ход игрока (X)");
     }
   };
 
   const resetGame = () => {
     setBoard(Array(9).fill(null));
     setWinner(null);
+    setStatusText("Ход игрока (X)");
   };
 
   return (
     <div style={{ textAlign: "center", paddingTop: "20px" }}>
       <h1>Крестики-нолики</h1>
-
-      {winner && (
-        <h2>{winner === "draw" ? "Ничья!" : `Победил ${winner}`}</h2>
-      )}
-
-      {!winner && <h2>Ход игрока (X)</h2>}
+      <h2>{statusText}</h2>
 
       <div
         style={{
@@ -145,10 +126,10 @@ function App() {
           marginTop: "20px",
         }}
       >
-        {board.map((cell, i) => (
+        {board.map((cell,i)=>(
           <button
             key={i}
-            onClick={() => handleClick(i)}
+            onClick={()=>handleClick(i)}
             style={{
               width: "100px",
               height: "100px",
