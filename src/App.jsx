@@ -27,11 +27,12 @@ function App() {
     }
   }, []);
 
-  // Обновляем статус и проверяем победителя
+  // Проверка победителя
   useEffect(() => {
     checkWinner();
   }, [board]);
 
+  // Обновление статуса
   useEffect(() => {
     if (winner) {
       setStatusText(winner === "draw" ? "Ничья!" : `Победил ${winner}`);
@@ -55,18 +56,14 @@ function App() {
     }
   };
 
-  // Ход игрока
   const handleClick = (index) => {
     if (board[index] || winner) return;
     const newBoard = [...board];
     newBoard[index] = "X";
     setBoard(newBoard);
-
-    // Ход компьютера через 300мс
     setTimeout(() => computerMove(newBoard), 300);
   };
 
-  // Минимакс AI
   const minimax = (newBoard, isMax) => {
     const availSpots = newBoard.map((v,i)=>v===null?i:null).filter(v=>v!==null);
     const w = getWinner(newBoard);
@@ -119,25 +116,29 @@ function App() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-purple-500 to-indigo-600 text-white p-4">
-      <h1 className="text-4xl font-bold mb-4">Крестики-нолики</h1>
+      <h1 className="text-4xl md:text-5xl font-bold mb-4">Крестики-нолики</h1>
 
       {/* Счёт игр */}
-      <div className="flex gap-8 mb-4 text-lg">
+      <div className="flex gap-6 md:gap-10 mb-4 text-lg md:text-xl font-semibold">
         <div>Игрок X: {score.X}</div>
         <div>Компьютер O: {score.O}</div>
         <div>Ничьи: {score.draw}</div>
       </div>
 
       {/* Статус */}
-      <h2 className="mb-4 text-xl font-semibold">{statusText}</h2>
+      <h2 className="mb-4 text-xl md:text-2xl font-semibold">{statusText}</h2>
 
       {/* Доска */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-3 md:gap-4 lg:gap-6">
         {board.map((cell,i)=>(
           <button
             key={i}
             onClick={()=>handleClick(i)}
-            className="w-24 h-24 md:w-32 md:h-32 text-3xl md:text-5xl font-bold bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
+            className="
+              w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 lg:w-40 lg:h-40
+              text-2xl sm:text-3xl md:text-5xl lg:text-6xl
+              font-bold bg-white/20 rounded-lg hover:bg-white/30 hover:scale-105 transition-all
+            "
           >
             {cell}
           </button>
@@ -146,7 +147,7 @@ function App() {
 
       <button
         onClick={resetGame}
-        className="mt-6 px-6 py-3 text-lg font-semibold bg-white/30 hover:bg-white/50 rounded-lg transition-colors"
+        className="mt-6 px-6 py-3 text-lg md:text-xl font-semibold bg-white/30 hover:bg-white/50 rounded-lg transition-colors"
       >
         Новая игра
       </button>
