@@ -10,15 +10,15 @@ function App() {
   const [board, setBoard] = useState(Array(9).fill(null));
   const [winner, setWinner] = useState(null);
   const [statusText, setStatusText] = useState("Ход игрока (X)");
+  const [stats, setStats] = useState({ player:0, computer:0, draw:0 });
 
+  // 🔹 Фон Telegram
   useEffect(() => {
     if (window.Telegram?.WebApp) {
       const tg = window.Telegram.WebApp;
       tg.ready();
       tg.expand();
       tg.MainButton.hide();
-
-      // 🔹 Фиксируем фон Telegram на фиолетовый, чтобы не перекрашивал градиент
       tg.setBackgroundColor("#7c3aed");
     }
   }, []);
@@ -31,12 +31,18 @@ function App() {
       if (board[a] && board[a] === board[b] && board[a] === board[c]) {
         setWinner(board[a]);
         setStatusText(`Победил ${board[a]}`);
+        setStats(prev => ({
+          ...prev,
+          player: board[a]==="X"? prev.player+1 : prev.player,
+          computer: board[a]==="O"? prev.computer+1 : prev.computer
+        }));
         return;
       }
     }
     if (!board.includes(null)) {
       setWinner("draw");
       setStatusText("Ничья!");
+      setStats(prev => ({...prev, draw: prev.draw + 1}));
       return;
     }
     setStatusText("Ход игрока (X)");
@@ -115,20 +121,19 @@ function App() {
       minHeight:"100vh",
       gap:"10px",
       padding:"10px",
-      // 🔹 Градиент внутри контейнера, Telegram не перекрашивает
-      background: "linear-gradient(to bottom right, #7c3aed, #4f46e5)",
+      background: "linear-gradient(to bottom right, #7c3aed, #4f46e5)"
     }}>
       <h1 style={{margin:0, color:"#facc15"}}>Крестики-нолики</h1>
       <h2 style={{margin:0, color:"#ffffff"}}>{statusText}</h2>
 
+      {/* 🔹 Игровое поле */}
       <div style={{
         display:"grid",
         gridTemplateColumns:"repeat(3, 1fr)",
         gap:"5px",
-        justifyContent:"center",
-        marginTop:"10px",
         width: boardSize,
         height: boardSize,
+        marginTop:"10px"
       }}>
         {board.map((cell,i)=>(
           <button
@@ -164,6 +169,13 @@ function App() {
       >
         Новая игра
       </button>
+
+      {/* 🔹 Статистика */}
+      <div style={{marginTop:"15px", color:"#ffffff", fontSize:"16px", textAlign:"center"}}>
+        <div>Игрок X: {stats.player}</div>
+        <div>Компьютер O: {stats.computer}</div>
+        <div>Ничьи: {stats.draw}</div>
+      </div>
     </div>
   );
 }
